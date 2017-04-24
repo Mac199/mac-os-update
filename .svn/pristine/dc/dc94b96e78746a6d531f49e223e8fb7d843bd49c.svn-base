@@ -1,0 +1,87 @@
+#
+# package OS updates for Mac OS X
+#
+
+osVersion = 10.9.2
+installApp = Install\ OS\ X\ Mavericks\ ${osVersion}.app
+update = InstallOSX_${osVersion}-2-bash_update.tar.gz.gpg
+
+securityUpdateName = SecUpd2014-002Mavericks
+securityUpdatePkg = ${securityUpdateName}.pkg
+securityUpdate = MacOSX_${securityUpdateName}_update.tar.gz.gpg
+
+
+LionVersion = 10.7.5
+#LionVersion = 10.7.3
+SnowLeopardVersion = 10.6.8_v1.1B
+LeopardVersion = 10.5.8
+
+LionUpdate = MacOSXComboLion_${LionVersion}_update.tar.gz.gpg
+SnowLeopardUpdate = MacOSXComboSnowLeopard_${SnowLeopardVersion}_update.tar.gz.gpg
+LeopardUpdate = MacOSXComboLeopard_${LeopardVersion}_update.tar.gz.gpg
+
+#all: ${LionUpdate} ${SnowLeopardUpdate} ${LeopardUpdate}
+all: ${update}
+
+${securityUpdate}:
+	echo '#! /bin/bash' > install
+	echo 'if [ -x ~/MediaSignage/stop ]; then' >> install
+	echo '    ~/MediaSignage/stop' >> install
+	echo 'fi' >> install
+	echo 'sudo installer -pkg ${securityUpdatePkg} -target /' >> install
+	echo 'if [ "$$NOREBOOT" != "true" ]; then' >> install
+	echo '    sudo reboot' >> install
+	echo '    sleep 200' >> install
+	echo 'fi' >> install
+	echo 'exit $?' >> install
+	chmod 755 install
+	tar cvzf $(@:.gpg=) install ${securityUpdatePkg}
+	rm install
+	-gpg --default-key 'Helius (20080611) <support@helius.com>' --sign $(@:.gpg=)
+	rm $(@:.gpg=)
+	@echo "======== Success ========" $@
+
+%.tgz : %.pkg
+	rm -rf $<.expanded
+	pkgutil --expand $< $<.expanded
+	sudo rm -rf ttmp
+	mkdir ttmp
+	sudo tar -xpjf $<.expanded/$</Payload -C ttmp
+	sudo tar -cvzf $@ -C ttmp .
+
+
+# notes for Mavericks install
+# sudo ./createOSXinstallPkg --source Install\ OS\ X\ Mavericks.app
+# this command assumes the presents of Resources directory
+# Get more info about createOSXinstallPkg from:
+#     http://managingosx.wordpress.com/2012/07/25/son-of-installlion-pkg/
+#     git clone https://code.google.com/p/munki.installlionpkg/
+
+${installApp}: ${installApp}.tar
+	tar xvf ${installApp}.tar
+	touch ${installApp}
+
+InstallOSX_${osVersion}.pkg: ${installApp}
+	sudo ./createOSXinstallPkg --source ${installApp} --output=$@
+
+${update}: InstallOSX_${osVersion}.pkg install.in BashUpdateMavericks.tgz
+	sed -e s/__packageFileName__/InstallOSX_${osVersion}.pkg/ -e s/__osVersion__/${osVersion}/ -e s!__securityUpdatePkg__!${securityUpdatePkg}! < install.in > install
+	chmod a+xr install
+	tar cvzf $(@:.gpg=) install InstallOSX_${osVersion}.pkg ${securityUpdatePkg} BashUpdateMavericks.tgz
+	rm install
+	-gpg --default-key 'Helius (20080611) <support@helius.com>' --sign $(@:.gpg=)
+	rm $(@:.gpg=)
+	@echo "======== Success ========" $@
+
+
+
+${LionUpdate} ${SnowLeopardUpdate} ${LeopardUpdate}:
+	ver=$$(echo $@ | cut -d_ -f 2) ; \
+	sed s/__packageFileName__/MacOSXUpdCombo$${ver}.pkg/ < install.in > install ; \
+	chmod a+xr install ; \
+	tar cvzf $(@:.gpg=) install MacOSXUpdCombo$${ver}.pkg
+	rm install
+	-gpg --default-key 'Helius (20080611) <support@helius.com>' --sign $(@:.gpg=)
+	rm $(@:.gpg=)
+	@echo "======== Success ========" $@
+

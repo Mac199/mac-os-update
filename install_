@@ -1,0 +1,39 @@
+#! /bin/sh
+
+package="InstallOSX_10.12.4.pkg"
+
+if [ -x ~/MediaSignage/stop ]; then
+	~/MediaSignage/stop
+fi
+
+sudo installer -pkg ${package} -target /
+
+osVer=10.12.4
+buildVer=16E195
+defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
+defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
+
+defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
+defaults write com.apple.SetupAssistant DidSeeSyncSetup -bool TRUE
+defaults write com.apple.SetupAssistant DidSeeSyncSetup2 -bool TRUE
+defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedBuild ${buildVer}
+defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedVersion ${osVer}
+defaults write com.apple.SetupAssistant LastSeenBuddyBuildVersion ${buildVer}
+defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
+defaults write com.apple.SetupAssistant LastSeenSyncProductVersion ${osVer}
+defaults write com.apple.SetupAssistant RunNonInteractive -bool TRUE
+defaults write com.apple.SetupAssistant ShowKeychainSyncBuddyAtLogin -bool FALSE
+defaults write com.apple.SetupAssistant SkipFirstLoginOptimization -bool TRUE
+
+# Turn software updates off. This also keeps version checks of the flash plug-in from happening.
+sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool NO
+# Turn off Bluetooth and disable auto launch of Bluetooth Setup Assistant for keyboard and mouse.
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist ControllerPowerState -int 0
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekKeyboard 0
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekPointingDevice 0
+
+if [ "$NOREBOOT" != "true" ]; then
+	sudo reboot
+	sleep 200
+fi
+exit 0

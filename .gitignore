@@ -1,0 +1,7 @@
+/Install macOS Sierra.app
+/InstallOSX_10.12.4.pkg
+*.dmg
+*.pkg
+*.app
+*.tgz
+*.gpg

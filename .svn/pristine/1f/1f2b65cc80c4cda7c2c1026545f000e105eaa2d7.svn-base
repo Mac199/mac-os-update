@@ -1,0 +1,39 @@
+#! /bin/sh
+
+package=__packageFileName__
+
+if [ -x ~/MediaSignage/stop ]; then
+	~/MediaSignage/stop
+fi
+
+sudo installer -pkg ${package} -target /
+
+osVer=__osVersion__
+defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
+defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
+
+securityUpdatePkg=$(basename $PWD)/__securityUpdatePkg__
+cat > ~/MediaSignage/updateStage2 <<_theEnd_
+#!/bin/bash
+sudo installer -pkg ~/MediaSignageUpdates/${securityUpdatePkg} -target /
+sudo tar -xzf BashUpdateMavericks.tgz -C /
+
+# Turn software updates off. This also keeps version checks of the flash plug-in from happening.
+sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool NO
+# Turn off Bluetooth and disable auto launch of Bluetooth Setup Assistant for keyboard and mouse.
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist ControllerPowerState -int 0
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekKeyboard 0
+sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekPointingDevice 0
+
+rm \$0
+sudo reboot
+exit 0
+_theEnd_
+
+chmod 777 ~/MediaSignage/updateStage2
+
+if [ "$NOREBOOT" != "true" ]; then
+	sudo reboot
+	sleep 200
+fi
+exit 0

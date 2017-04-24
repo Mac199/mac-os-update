@@ -1,0 +1,25 @@
+
+            Apple Store
+                 |
+                 |
+            (download)
+                 |
+                 V
+	        Install ???.app  ---------> Install on a MAC and add Signage
+                 |                                        |
+                 |                                        |
+           (mac-os-updates)	                           Imaging
+                 |                                        |
+                 |                                        V
+                 V                                  .nbi directory ------------------------------
+			  .tar.gz                                     |                                     |
+              .tar.gz.gpg                                 |                                     |
+                 |                       (mac-os-package-for-imaging-server)                    |
+                 |                                        |                                     |
+                 V                                        V                                     V
+                MGS                                      .pkg ----------------------------> Imaging Server
+                 |                                                                              |
+                 |                                                                              |
+                 V                                                                              V
+       MAC Players in the field                                                     New MAC Players at the factory
+
