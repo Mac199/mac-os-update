@@ -30,7 +30,9 @@ all: ${update}
 
 InstallOSX_${osVersion}.pkg: ${installApp}
 	sudo ./createOSXinstallPkg --source ${installApp} --output=$@
-
+	sudo cp brtool.Sierra InstallOSX_${osVersion}.pkg/Contents/Resources/brtool
+	sudo chmod 755 InstallOSX_${osVersion}.pkg/Contents/Resources/brtool
+	sudo chown root:staff InstallOSX_${osVersion}.pkg/Contents/Resources/brtool
 ${update}: InstallOSX_${osVersion}.pkg install.in
 	sed -e s/__packageFileName__/InstallOSX_${osVersion}.pkg/ -e s/__osVersion__/${osVersion}/ -e s/__buildVersion__/${buildVersion}/ < install.in > install
 	chmod a+xr install
@@ -40,3 +42,7 @@ ${update}: InstallOSX_${osVersion}.pkg install.in
 	rm $(@:.gpg=)
 	@echo "======== Success ========" $@
 
+clean:
+	sudo rm -rf InstallOSX_10.12.4.pkg/
+	rm InstallOSX_10.12.4_update.tar.gz
+	rm InstallOSX_10.12.4_update.tar.gz.gpg

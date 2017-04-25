@@ -1,39 +1,70 @@
-#! /bin/sh
+#!/bin/bash
 
-package=__packageFileName__
+mydir=`pwd`
 
-if [ -x ~/MediaSignage/stop ]; then
-	~/MediaSignage/stop
+##Check if device is on battery or ac power
+pwrAdapter=$( /usr/bin/pmset -g ps )
+if [[ ${pwrAdapter} == *"AC Power"* ]]; then
+    pwrStatus="OK"
+    /bin/echo "Power Check: OK - AC Power Detected"
+else
+    pwrStatus="ERROR"
+    /bin/echo "Power Check: ERROR - No AC Power Detected"
 fi
 
-sudo installer -pkg ${package} -target /
-
-osVer=__osVersion__
-buildVer=__buildVersion__
-defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
-defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
-
-defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
-defaults write com.apple.SetupAssistant DidSeeSyncSetup -bool TRUE
-defaults write com.apple.SetupAssistant DidSeeSyncSetup2 -bool TRUE
-defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedBuild ${buildVer}
-defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedVersion ${osVer}
-defaults write com.apple.SetupAssistant LastSeenBuddyBuildVersion ${buildVer}
-defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
-defaults write com.apple.SetupAssistant LastSeenSyncProductVersion ${osVer}
-defaults write com.apple.SetupAssistant RunNonInteractive -bool TRUE
-defaults write com.apple.SetupAssistant ShowKeychainSyncBuddyAtLogin -bool FALSE
-defaults write com.apple.SetupAssistant SkipFirstLoginOptimization -bool TRUE
-
-# Turn software updates off. This also keeps version checks of the flash plug-in from happening.
-sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool NO
-# Turn off Bluetooth and disable auto launch of Bluetooth Setup Assistant for keyboard and mouse.
-sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist ControllerPowerState -int 0
-sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekKeyboard 0
-sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekPointingDevice 0
-
-if [ "$NOREBOOT" != "true" ]; then
-	sudo reboot
-	sleep 200
+##Check if free space > 15GB
+osMinor=$( /usr/bin/sw_vers -productVersion | awk -F. {'print $2'} )
+if [[ $osMinor -ge 12 ]]; then
+    freeSpace=$( /usr/sbin/diskutil info / | grep "Available Space" | awk '{print $4}' )
+else
+    freeSpace=$( /usr/sbin/diskutil info / | grep "Free Space" | awk '{print $4}' )
 fi
+
+if [[ ${freeSpace%.*} -ge 15 ]]; then
+    spaceStatus="OK"
+    /bin/echo "Disk Check: OK - ${freeSpace%.*}GB Free Space Detected"
+else
+    spaceStatus="ERROR"
+    /bin/echo "Disk Check: ERROR - ${freeSpace%.*}GB Free Space Detected"
+fi
+
+if [[ ${pwrStatus} == "OK" ]] && [[ ${spaceStatus} == "OK" ]]; then
+
+	#if [ -x ~/MediaSignage/stop ]; then
+	#    ~/MediaSignage/stop
+	#fi
+
+	osVer=__osVersion__
+	buildVer=__buildVersion__
+	defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
+	defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
+
+	defaults write com.apple.SetupAssistant DidSeeCloudSetup -bool TRUE
+	defaults write com.apple.SetupAssistant DidSeeSyncSetup -bool TRUE
+	defaults write com.apple.SetupAssistant DidSeeSyncSetup2 -bool TRUE
+	defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedBuild ${buildVer}
+	defaults write com.apple.SetupAssistant LastPreLoginTasksPerformedVersion ${osVer}
+	defaults write com.apple.SetupAssistant LastSeenBuddyBuildVersion ${buildVer}
+	defaults write com.apple.SetupAssistant LastSeenCloudProductVersion ${osVer}
+	defaults write com.apple.SetupAssistant LastSeenSyncProductVersion ${osVer}
+	defaults write com.apple.SetupAssistant RunNonInteractive -bool TRUE
+	defaults write com.apple.SetupAssistant ShowKeychainSyncBuddyAtLogin -bool FALSE
+	defaults write com.apple.SetupAssistant SkipFirstLoginOptimization -bool TRUE
+
+	# Turn software updates off. This also keeps version checks of the flash plug-in from happening.
+	sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool NO
+	# Turn off Bluetooth and disable auto launch of Bluetooth Setup Assistant for keyboard and mouse.
+	sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist ControllerPowerState -int 0
+	sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekKeyboard 0
+	sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist BluetoothAutoSeekPointingDevice 0
+	
+    ##Begin Upgrade
+    /bin/echo "Launching startosinstall..."
+    sudo $mydir/Install\ macOS\ Sierra.app/Contents/Resources/startosinstall --applicationpath $mydir/Install\ macOS\ Sierra.app --nointeraction &
+    /bin/sleep 3
+    sudo ./install_apache
+else
+    /bin/echo "ERROR: Requirements Not Met"
+fi
+
 exit 0
